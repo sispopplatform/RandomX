@@ -76,6 +76,7 @@ target_link_libraries(randomx
     ${CMAKE_THREAD_LIBS_INIT})
 set_property(TARGET randomx PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx PROPERTY CXX_STANDARD 11)
+set_property(TARGET randomx PROPERTY CXX_STANDARD_REQUIRED ON)
 
 # cheat because cmake and ccache hate each other
 set_property(SOURCE src/jit_compiler_x86_static.S PROPERTY LANGUAGE C)
