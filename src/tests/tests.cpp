@@ -156,6 +156,7 @@ int main() {
 		randomx::JitCompiler jit;
 		jit.generateSuperscalarHash(cache->programs, cache->reciprocalCache);
 		jit.generateDatasetInitCode();
+		jit.enableAll();
 		uint64_t datasetItem[8];
 		jit.getDatasetInitFunc()(cache, (uint8_t*)&datasetItem, 0, 1);
 		assert(datasetItem[0] == 0x5f7f5d6307b4112e);

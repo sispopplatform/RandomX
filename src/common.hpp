@@ -37,14 +37,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace randomx {
 
-	static_assert(RANDOMX_ARGON_MEMORY > 0, "RANDOMX_ARGON_MEMORY must be greater than 0.");
+	static_assert(RANDOMX_ARGON_MEMORY >= 8, "RANDOMX_ARGON_MEMORY must be at least 8.");
+	static_assert(RANDOMX_ARGON_MEMORY <= 2097152, "RANDOMX_ARGON_MEMORY must not exceed 2097152.");
 	static_assert((RANDOMX_ARGON_MEMORY & (RANDOMX_ARGON_MEMORY - 1)) == 0, "RANDOMX_ARGON_MEMORY must be a power of 2.");
+	static_assert(RANDOMX_ARGON_ITERATIONS > 0 && RANDOMX_ARGON_ITERATIONS < UINT32_MAX, "RANDOMX_ARGON_ITERATIONS must be a positive 32-bit integer.");
+	static_assert(RANDOMX_ARGON_LANES > 0 && RANDOMX_ARGON_LANES <= 16777215, "RANDOMX_ARGON_LANES out of range");
 	static_assert(RANDOMX_DATASET_BASE_SIZE >= 64, "RANDOMX_DATASET_BASE_SIZE must be at least 64.");
 	static_assert((RANDOMX_DATASET_BASE_SIZE & (RANDOMX_DATASET_BASE_SIZE - 1)) == 0, "RANDOMX_DATASET_BASE_SIZE must be a power of 2.");
 	static_assert(RANDOMX_DATASET_BASE_SIZE <= 4294967296ULL, "RANDOMX_DATASET_BASE_SIZE must not exceed 4294967296.");
 	static_assert(RANDOMX_DATASET_EXTRA_SIZE % 64 == 0, "RANDOMX_DATASET_EXTRA_SIZE must be divisible by 64.");
 	static_assert((uint64_t)RANDOMX_DATASET_BASE_SIZE + RANDOMX_DATASET_EXTRA_SIZE <= 17179869184, "Dataset size must not exceed 16 GiB.");
 	static_assert(RANDOMX_PROGRAM_SIZE > 0, "RANDOMX_PROGRAM_SIZE must be greater than 0");
+	static_assert(RANDOMX_PROGRAM_SIZE <= 32768, "RANDOMX_PROGRAM_SIZE must not exceed 32768");
 	static_assert(RANDOMX_PROGRAM_ITERATIONS > 0, "RANDOMX_PROGRAM_ITERATIONS must be greater than 0");
 	static_assert(RANDOMX_PROGRAM_COUNT > 0, "RANDOMX_PROGRAM_COUNT must be greater than 0");
 	static_assert((RANDOMX_SCRATCHPAD_L3 & (RANDOMX_SCRATCHPAD_L3 - 1)) == 0, "RANDOMX_SCRATCHPAD_L3 must be a power of 2.");
@@ -55,6 +59,7 @@ namespace randomx {
 	static_assert((RANDOMX_SCRATCHPAD_L1 & (RANDOMX_SCRATCHPAD_L1 - 1)) == 0, "RANDOMX_SCRATCHPAD_L1 must be a power of 2.");
 	static_assert(RANDOMX_CACHE_ACCESSES > 1, "RANDOMX_CACHE_ACCESSES must be greater than 1");
 	static_assert(RANDOMX_SUPERSCALAR_LATENCY > 0, "RANDOMX_SUPERSCALAR_LATENCY must be greater than 0");
+	static_assert(RANDOMX_SUPERSCALAR_LATENCY <= 10000, "RANDOMX_SUPERSCALAR_LATENCY must not exceed 10000");
 	static_assert(RANDOMX_JUMP_BITS > 0, "RANDOMX_JUMP_BITS must be greater than 0.");
 	static_assert(RANDOMX_JUMP_OFFSET >= 0, "RANDOMX_JUMP_OFFSET must be greater than or equal to 0.");
 	static_assert(RANDOMX_JUMP_BITS + RANDOMX_JUMP_OFFSET <= 16, "RANDOMX_JUMP_BITS + RANDOMX_JUMP_OFFSET must not exceed 16.");
@@ -72,6 +77,7 @@ namespace randomx {
 
 	constexpr uint32_t ArgonBlockSize = 1024;
 	constexpr int ArgonSaltSize = sizeof("" RANDOMX_ARGON_SALT) - 1;
+	static_assert(ArgonSaltSize >= 8, "RANDOMX_ARGON_SALT must be at least 8 characters long");
 	constexpr int SuperscalarMaxSize = 3 * RANDOMX_SUPERSCALAR_LATENCY + 2;
 	constexpr size_t CacheLineSize = RANDOMX_DATASET_ITEM_SIZE;
 	constexpr int ScratchpadSize = RANDOMX_SCRATCHPAD_L3;
@@ -113,7 +119,7 @@ namespace randomx {
 	class JitCompilerX86;
 	using JitCompiler = JitCompilerX86;
 #elif defined(__aarch64__)
-	#define RANDOMX_HAVE_COMPILER 0
+	#define RANDOMX_HAVE_COMPILER 1
 	class JitCompilerA64;
 	using JitCompiler = JitCompilerA64;
 #else
@@ -145,7 +151,7 @@ namespace randomx {
 	constexpr int RegisterNeedsDisplacement = 5; //x86 r13 register
 	constexpr int RegisterNeedsSib = 4; //x86 r12 register
 
-	inline bool isPowerOf2(uint64_t x) {
+	inline bool isZeroOrPowerOf2(uint64_t x) {
 		return (x & (x - 1)) == 0;
 	}
 

@@ -28,7 +28,10 @@ IFDEF RAX
 
 _RANDOMX_JITX86_STATIC SEGMENT PAGE READ EXECUTE
 
+PUBLIC randomx_prefetch_scratchpad
+PUBLIC randomx_prefetch_scratchpad_end
 PUBLIC randomx_program_prologue
+PUBLIC randomx_program_prologue_first_load
 PUBLIC randomx_program_loop_begin
 PUBLIC randomx_program_loop_load
 PUBLIC randomx_program_start
@@ -51,6 +54,20 @@ include asm/configuration.asm
 RANDOMX_SCRATCHPAD_MASK     EQU (RANDOMX_SCRATCHPAD_L3-64)
 RANDOMX_DATASET_BASE_MASK   EQU (RANDOMX_DATASET_BASE_SIZE-64)
 RANDOMX_CACHE_MASK          EQU (RANDOMX_ARGON_MEMORY*16-1)
+RANDOMX_ALIGN               EQU 4096
+SUPERSCALAR_OFFSET          EQU ((((RANDOMX_ALIGN + 32 * RANDOMX_PROGRAM_SIZE) - 1) / (RANDOMX_ALIGN) + 1) * (RANDOMX_ALIGN))
+
+randomx_prefetch_scratchpad PROC
+	mov rdx, rax
+	and eax, RANDOMX_SCRATCHPAD_MASK
+	prefetcht0 [rsi+rax]
+	ror rdx, 32
+	and edx, RANDOMX_SCRATCHPAD_MASK
+	prefetcht0 [rsi+rdx]
+randomx_prefetch_scratchpad ENDP
+
+randomx_prefetch_scratchpad_end PROC
+randomx_prefetch_scratchpad_end ENDP
 
 ALIGN 64
 randomx_program_prologue PROC
@@ -58,8 +75,17 @@ randomx_program_prologue PROC
 	movapd xmm13, xmmword ptr [mantissaMask]
 	movapd xmm14, xmmword ptr [exp240]
 	movapd xmm15, xmmword ptr [scaleMask]
-	jmp randomx_program_loop_begin
 randomx_program_prologue ENDP
+
+randomx_program_prologue_first_load PROC
+	xor rax, r8
+	xor rax, r8
+	mov rdx, rax
+	and eax, RANDOMX_SCRATCHPAD_MASK
+	ror rdx, 32
+	and edx, RANDOMX_SCRATCHPAD_MASK
+	jmp randomx_program_loop_begin
+randomx_program_prologue_first_load ENDP
 
 ALIGN 64
 	include asm/program_xmm_constants.inc
@@ -115,7 +141,7 @@ init_block_loop:
 	prefetchw byte ptr [rsi]
 	mov rbx, rbp
 	db 232 ;# 0xE8 = call
-	dd 32768 - distance
+	dd SUPERSCALAR_OFFSET - distance
 	distance equ $ - offset randomx_dataset_init
 	mov qword ptr [rsi+0], r8
 	mov qword ptr [rsi+8], r9
