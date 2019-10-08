@@ -997,8 +997,9 @@ int main() {
 
 	if (RANDOMX_HAVE_COMPILER) {
 		randomx_release_cache(cache);
-		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
 		randomx_destroy_vm(vm);
+		vm = nullptr;
+		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
 		initCache("test key 000");
 		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
 	}
