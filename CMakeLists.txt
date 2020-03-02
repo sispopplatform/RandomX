@@ -26,9 +26,11 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-cmake_minimum_required(VERSION 2.8.7)
+cmake_minimum_required(VERSION 3.5)
 
-set (randomx_sources
+project(randomx)
+
+add_library(randomx
 src/aes_hash.cpp
 src/argon2_ref.c
 src/bytecode_machine.cpp
@@ -80,19 +82,13 @@ function(add_flag flag)
   check_cxx_compiler_flag(${flag} ${supported_cxx})
   if(${${supported_cxx}})
     message(STATUS "Setting CXX flag ${flag}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}" PARENT_SCOPE)
-  endif()
-  string(REPLACE "-" "_" supported_c ${flag}_c)
-  check_c_compiler_flag(${flag} ${supported_c})
-  if(${${supported_c}})
-    message(STATUS "Setting C flag ${flag}")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flag}" PARENT_SCOPE)
+    target_compile_options(randomx PRIVATE "${flag}")
   endif()
 endfunction()
 
 # x86-64
 if (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "amd64")
-  list(APPEND randomx_sources
+  target_sources(randomx PRIVATE
     src/jit_compiler_x86_static.S
     src/jit_compiler_x86.cpp)
   # cheat because cmake and ccache hate each other
@@ -116,7 +112,7 @@ endif()
 
 # ARMv8
 if (ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "armv8-a")
-  list(APPEND randomx_sources
+  target_sources(randomx PRIVATE
     src/jit_compiler_a64_static.S
     src/jit_compiler_a64.cpp)
   # cheat because cmake and ccache hate each other
@@ -130,10 +126,12 @@ if (ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "arm
   endif()
 endif()
 
-set(RANDOMX_INCLUDE "${CMAKE_CURRENT_SOURCE_DIR}/src" CACHE STRING "RandomX Include path")
+target_include_directories(randomx
+    PUBLIC
+    $<INSTALL_INTERFACE:>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
 
-add_library(randomx
-  ${randomx_sources})
 set_property(TARGET randomx PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx PROPERTY CXX_STANDARD 11)
 set_property(TARGET randomx PROPERTY CXX_STANDARD_REQUIRED ON)
@@ -165,8 +163,9 @@ add_executable(randomx-benchmark
   src/tests/benchmark.cpp
   src/tests/affinity.cpp)
 target_link_libraries(randomx-benchmark
-  PRIVATE randomx
-  PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+  PRIVATE
+    randomx
+    Threads::Threads)
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
