@@ -143,7 +143,11 @@ int main() {
 		randomx::JitCompiler jit;
 		jit.generateSuperscalarHash(cache->programs, cache->reciprocalCache);
 		jit.generateDatasetInitCode();
+#ifdef __OpenBSD__
+		jit.enableExecution();
+#else
 		jit.enableAll();
+#endif
 		uint64_t datasetItem[8];
 		jit.getDatasetInitFunc()(cache, (uint8_t*)&datasetItem, 0, 1);
 		assert(datasetItem[0] == 0x5f7f5d6307b4112e);
@@ -950,7 +954,11 @@ int main() {
 		assert(ibc.memMask == randomx::ScratchpadL3Mask);
 	});
 
+#ifdef __OpenBSD__
+	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
 	vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+#endif
 
 	auto test_a = [&] {
 		char hash[RANDOMX_HASH_SIZE];
@@ -1001,7 +1009,11 @@ int main() {
 		vm = nullptr;
 		cache = randomx_alloc_cache(RANDOMX_FLAG_JIT);
 		initCache("test key 000");
-		vm = randomx_create_vm(RANDOMX_FLAG_JIT, cache, nullptr);
+#ifdef __OpenBSD__
+		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT | RANDOMX_FLAG_SECURE, cache, nullptr);
+#else
+		vm = randomx_create_vm(RANDOMX_FLAG_DEFAULT, cache, nullptr);
+#endif
 	}
 
 	runTest("Hash test 2a (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomXL\x12"), test_a);
@@ -1013,6 +1025,37 @@ int main() {
 	runTest("Hash test 2d (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomXL\x12"), test_d);
 
 	runTest("Hash test 2e (compiler)", RANDOMX_HAVE_COMPILER && stringsEqual(RANDOMX_ARGON_SALT, "RandomXL\x12"), test_e);
+
+	randomx_destroy_vm(vm);
+	vm = nullptr;
+
+	auto flags = randomx_get_flags();
+
+	randomx_release_cache(cache);
+	cache = randomx_alloc_cache(RANDOMX_FLAG_ARGON2_SSSE3);
+
+	runTest("Cache initialization: SSSE3", (flags & RANDOMX_FLAG_ARGON2_SSSE3) && RANDOMX_ARGON_ITERATIONS == 3 && RANDOMX_ARGON_LANES == 1 && RANDOMX_ARGON_MEMORY == 262144 && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
+		initCache("test key 000");
+		uint64_t* cacheMemory = (uint64_t*)cache->memory;
+		assert(cacheMemory[0] == 0x191e0e1d23c02186);
+		assert(cacheMemory[1568413] == 0xf1b62fe6210bf8b1);
+		assert(cacheMemory[33554431] == 0x1f47f056d05cd99b);
+	});
+
+	if (cache != nullptr)
+		randomx_release_cache(cache);
+	cache = randomx_alloc_cache(RANDOMX_FLAG_ARGON2_AVX2);
+
+	runTest("Cache initialization: AVX2", (flags & RANDOMX_FLAG_ARGON2_AVX2) && RANDOMX_ARGON_ITERATIONS == 3 && RANDOMX_ARGON_LANES == 1 && RANDOMX_ARGON_MEMORY == 262144 && stringsEqual(RANDOMX_ARGON_SALT, "RandomX\x03"), []() {
+		initCache("test key 000");
+		uint64_t* cacheMemory = (uint64_t*)cache->memory;
+		assert(cacheMemory[0] == 0x191e0e1d23c02186);
+		assert(cacheMemory[1568413] == 0xf1b62fe6210bf8b1);
+		assert(cacheMemory[33554431] == 0x1f47f056d05cd99b);
+	});
+
+	if (cache != nullptr)
+		randomx_release_cache(cache);
 
 	std::cout << std::endl << "All tests PASSED" << std::endl;
 
