@@ -75,13 +75,16 @@ local mac_builder(name, build_type='Release', cmake_extra='', extra_cmds=[], all
     debian_pipeline("Debian sid/gcc-10 (amd64)", "debian:sid", deps='g++-10',
         cmake_extra='-DCMAKE_C_COMPILER=gcc-10 -DCMAKE_CXX_COMPILER=g++-10'),
     debian_pipeline("Debian buster (i386)", "i386/debian:buster", cmake_extra='-DARCH_ID=i386',
-        benchmark='./randomx-benchmark --mine --init $$(nproc)'),
+        benchmark='./randomx-benchmark --verify --softAes --nonces 10'),
     debian_pipeline("Ubuntu focal (amd64)", "ubuntu:focal"),
 
     // ARM builds (ARM64 and armhf)
-    debian_pipeline("Debian sid (ARM64)", "debian:sid", arch="arm64"),
-    debian_pipeline("Ubuntu bionic (ARM64)", "ubuntu:bionic", arch="arm64"),
-    debian_pipeline("Debian buster (armhf)", "arm32v7/debian:buster", arch="arm64"),
+    debian_pipeline("Debian sid (ARM64)", "debian:sid", arch="arm64",
+        benchmark='./randomx-benchmark --jit --verify --nonces 10 --softAes'),
+    debian_pipeline("Ubuntu bionic (ARM64)", "ubuntu:bionic", arch="arm64",
+        benchmark='./randomx-benchmark --jit --verify --nonces 10 --softAes'),
+    debian_pipeline("Debian buster (armhf)", "arm32v7/debian:buster", arch="arm64", cmake_extra='-DARCH_ID=armhf',
+        benchmark='./randomx-benchmark --verify --nonces 10 --softAes'),
 
     // Macos builds:
     mac_builder('macOS (Release)'),
