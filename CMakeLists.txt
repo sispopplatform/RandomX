@@ -154,18 +154,20 @@ target_link_libraries(randomx-codegen
 set_property(TARGET randomx-codegen PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET randomx-codegen PROPERTY CXX_STANDARD 11)
 
-if (NOT Threads_FOUND AND UNIX AND NOT APPLE)
-  set(THREADS_PREFER_PTHREAD_FLAG ON)
-  find_package(Threads)
-endif()
-
 add_executable(randomx-benchmark
   src/tests/benchmark.cpp
   src/tests/affinity.cpp)
 target_link_libraries(randomx-benchmark
   PRIVATE
-    randomx
-    Threads::Threads)
+    randomx)
+
+if (NOT Threads_FOUND AND UNIX AND NOT APPLE)
+  set(THREADS_PREFER_PTHREAD_FLAG ON)
+  find_package(Threads)
+endif()
+if (Threads_FOUND)
+  target_link_libraries(randomx-benchmark PRIVATE Threads::Threads)
+
 
 include(CheckCXXSourceCompiles)
 check_cxx_source_compiles("
