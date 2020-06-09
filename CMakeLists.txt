@@ -167,6 +167,7 @@ if (NOT Threads_FOUND AND UNIX AND NOT APPLE)
 endif()
 if (Threads_FOUND)
   target_link_libraries(randomx-benchmark PRIVATE Threads::Threads)
+endif()
 
 
 include(CheckCXXSourceCompiles)
