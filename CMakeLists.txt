@@ -56,6 +56,11 @@ src/virtual_machine.cpp
 src/vm_compiled_light.cpp
 src/blake2/blake2b.c)
 
+option(RANDOMX_ENABLE_JIT "Enables building the jit compiler (for amd64 or arm64)" ON)
+if(NOT RANDOMX_ENABLE_JIT)
+  add_definitions(-DRANDOMX_NO_JIT)
+endif()
+
 if(NOT ARCH_ID)
   # allow cross compiling
   if(CMAKE_SYSTEM_PROCESSOR STREQUAL "")
@@ -90,7 +95,7 @@ function(add_flag flag)
 endfunction()
 
 # x86-64
-if (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "amd64")
+if (RANDOMX_ENABLE_JIT AND (ARCH_ID STREQUAL "x86_64" OR ARCH_ID STREQUAL "x86-64" OR ARCH_ID STREQUAL "amd64"))
   target_sources(randomx PRIVATE
     src/jit_compiler_x86_static.S
     src/jit_compiler_x86.cpp)
@@ -123,7 +128,7 @@ if (ARCH_ID STREQUAL "ppc64" OR ARCH_ID STREQUAL "ppc64le")
 endif()
 
 # ARMv8
-if (ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "armv8-a")
+if (RANDOMX_ENABLE_JIT AND (ARM_ID STREQUAL "aarch64" OR ARM_ID STREQUAL "arm64" OR ARM_ID STREQUAL "armv8-a"))
   target_sources(randomx PRIVATE
     src/jit_compiler_a64_static.S
     src/jit_compiler_a64.cpp)
