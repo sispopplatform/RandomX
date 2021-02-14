@@ -72,8 +72,6 @@ local mac_builder(name, build_type='Release', cmake_extra='', extra_cmds=[], all
     debian_pipeline("Debian sid/Debug (amd64)", "debian:sid", build_type='Debug'),
     debian_pipeline("Debian sid/clang-11 (amd64)", "debian:sid", deps='cmake clang-11',
         cmake_extra='-DCMAKE_C_COMPILER=clang-11 -DCMAKE_CXX_COMPILER=clang++-11'),
-    debian_pipeline("Debian sid/gcc-11 (amd64)", "debian:sid", deps='g++-11',
-        cmake_extra='-DCMAKE_C_COMPILER=gcc-11 -DCMAKE_CXX_COMPILER=g++-11'),
     debian_pipeline("Debian buster (i386)", "i386/debian:buster", cmake_extra='-DARCH_ID=i386',
         benchmark='./randomx-benchmark --verify --softAes --nonces 10'),
     debian_pipeline("Ubuntu focal (amd64)", "ubuntu:focal"),
